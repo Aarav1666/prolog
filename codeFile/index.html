@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Square</title>
+</head>
+<body>
+
+    <input type="number" id="MatrixSize" min="1" placeholder="Enter Size">
+    <input type="number" id="MagicNumber" min="1" placeholder="Enter Magic Number">
+    <button id="MagicButton">Magic</button>
+    
+    <div id="table">
+        <div id="status"></div>
+        <div id = "tableElement" style="display: flex; flex-direction: column;">
+            <div style="display: grid; text-align: center; grid-template-columns: auto auto auto;">
+                
+            </div>
+            
+        </div>
+        <div id="currentPosition"></div>
+        <div id = "buttonControls" style="flex-direction: row;">
+            <button id="previous">Previous</button>
+            <button id="next">Next</button>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.js"></script>
+    <script>
+
+        // DOM
+        let MatrixSize = document.getElementById('MatrixSize')
+        let MagicNumber = document.getElementById('MagicNumber')
+        let MagicButton = document.getElementById('MagicButton')
+        let tableElementDOM = document.getElementById("tableElement")
+        let statusDOM = document.getElementById("status")
+        let buttonControlsDOM = document.getElementById("buttonControls")
+        let previousDOM = document.getElementById("previous")
+        let nextDOM = document.getElementById("next")
+        let currentPositionDOM = document.getElementById("currentPosition")
+
+        // init
+        buttonControlsDOM.style.display = 'none'
+
+        // fields
+        let squares = [];
+        let showIndex = 0;
+
+        // helpers
+        let showElement = (index) => {
+
+            // console.log(squares[index])
+            let gridColumns = "";
+            for(let i=0; i<squares[index].length; i++){
+                gridColumns += "auto "
+            }
+            let htmlContent = `<div style="display: grid; text-align: center; grid-template-columns: ${gridColumns};">`
+            
+            squares[index].forEach((row) => {
+                row.forEach((value) => {
+                    htmlContent += `<span style="border: 0.5px solid black;">${value}</span>`
+                })
+            })
+            htmlContent += `</div>`
+            tableElementDOM.innerHTML = htmlContent
+            currentPositionDOM.innerHTML = `${showIndex+1}/${squares.length}`
+            
+        }
+
+        // listeners
+        MagicButton.addEventListener('click', ()=>{
+            
+            // request object
+            const req = {
+                size: MatrixSize.value,
+                magicNumber: MagicNumber.value
+            }
+
+            // send request
+            axios.post('http://localhost:3000/magicSquare',req)
+            .then((res) => {
+
+                // init response
+                const inputStatus = res.data.inputStatus
+                const isSolutionFound = res.data.isSolutionFound
+
+                // control flow
+                if(!inputStatus){
+                    tableElementDOM.innerHTML = ``
+                    statusDOM.innerHTML = ``
+                    buttonControlsDOM.style.display = 'none'
+                    showIndex = 0
+                    window.alert('Invalid Input')
+                    return
+                }
+
+                if(!isSolutionFound){
+                    tableElementDOM.innerHTML = ``
+                    statusDOM.innerHTML = `No solution found`
+                    buttonControlsDOM.style.display = 'none'
+                    showIndex = 0
+                    window.alert('No Solution Found')
+                    return
+                }
+
+                if(isSolutionFound){
+                    squares = res.data.solution
+                    buttonControlsDOM.style.display = 'flex'
+                    statusDOM.innerHTML = `${res.data.solution.length} solutions found`
+                    showIndex = 0
+                    showElement(0)
+                }
+
+
+            })
+            .catch((err) => {
+                console.log(err)
+                alert(err)
+            })
+
+        })
+
+
+        previousDOM.addEventListener('click', () => {
+            showIndex-=1
+
+            if(showIndex < 0){
+                showIndex = squares.length - 1
+            }
+
+            showElement(showIndex)
+        })
+
+        nextDOM.addEventListener('click', () => {
+            showIndex+=1
+
+            if(showIndex >= squares.length){
+                showIndex = 0
+            }
+
+            showElement(showIndex)
+        })
+
+    </script>
+</body>
+</html>
